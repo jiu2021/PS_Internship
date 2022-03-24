@@ -1,28 +1,35 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <WaterfallFlow :imgList="imgList" columnSet="3"/>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import WaterfallFlow from './components/WaterfallFlow/index.vue';
+import {reqGetImgList} from './api/index'
 
 export default {
   name: 'App',
+  data() {
+    return {
+      imgList:[]
+    }
+  },
   components: {
-    HelloWorld
+    WaterfallFlow
+  },
+  async created() {
+    const res = await reqGetImgList();
+    if(res.code==200) {
+      this.imgList = res.data;
+    }
   }
 }
 </script>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
+<style scoped>
+  #app {
+    width: 100%;
+    height: 100%;
+  }
 </style>
