@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <WaterfallFlow :imgList="imgList" columnSet="3"/>
+    <WaterfallFlow :imgListProp="imgList" :columnCountProp="3" :columnGapProp="10"/>
   </div>
 </template>
 
@@ -18,10 +18,15 @@ export default {
   components: {
     WaterfallFlow
   },
-  async created() {
-    const res = await reqGetImgList();
-    if(res.code==200) {
-      this.imgList = res.data;
+  created() {
+    this.getImgList();
+  },
+  methods:{
+    async getImgList() {
+      const res = await reqGetImgList();
+      if(res.code==200) {
+        this.imgList = res.data;
+      }
     }
   }
 }
