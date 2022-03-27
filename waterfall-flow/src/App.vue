@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <WaterfallFlow :imgListProp="imgList" :columnCountProp="3" :columnGapProp="10"/>
+    <WaterfallFlow :imgListProp="imgList" :columnCountProp="4" :columnGapProp="5"/>
   </div>
 </template>
 
