@@ -1,5 +1,12 @@
 /* 清除内外边距 */
 
+:root {
+  font-size: 16px;
+  --loading-grey: #ededed;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --shadow-hover: rgba(0, 0, 0, 0.2);
+}
+
 body,
 h1,
 h2,
@@ -48,9 +55,10 @@ textarea {
   color: #333;
 }
 
-h1 {
+
+/*h1 {
   font-size: 18px;
-  /* 18px / 12px = 1.5 */
+   18px / 12px = 1.5 
 }
 
 h2 {
@@ -65,7 +73,7 @@ h4,
 h5,
 h6 {
   font-size: 100%;
-}
+}*/
 
 address,
 cite,
