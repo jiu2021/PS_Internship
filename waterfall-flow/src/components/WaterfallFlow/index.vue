@@ -1,13 +1,13 @@
 <template>
   <div class="flow-wrapper">
-    <ul class="flow-container">
+    <ul class="flow-container" ref="flowContainer">
       <li v-for="(img,index) in imgList" :key="img.id" 
           class="flow-item" ref="imgWrapper" 
           :style="{'width':newImgWidth+'px','visibility':!isLoading ? 'visible':'hidden'}"
-          v-show="nextImgIndex>index"
+          v-show="nextImgIndex > index"
       >
         <div class="item-imgContainer">
-          <img :src="img.imgUrl" class="item-img" ref="img">
+          <img src="#" class="item-img" ref="img">
         </div>
         <div class="item-details">
           <h3 class="title" v-show="img.details.header">{{img.details.header}}</h3>
@@ -27,37 +27,58 @@
         </div>
       </li>
     </ul>
+    <div class="footer"><span v-show="isShowBottom">已经到加载到底部啦！</span></div>
   </div>
 </template>
 
 <script>
+import _ from 'lodash';
+import defaultImg from './images/default.png'
 export default {
   name:'WaterfallFlow',
-  props:['imgListProp','columnCountProp','columnGapProp'],
+  props:['imgListProp','columnCountProp','columnGapProp','defaultImgUrlProp'],
   data() {
     return {
       layoutArr:[],
       imgList:[],
-      newImgWidth:'',
+      newImgWidth:0,
       windowWidth:document.documentElement.clientWidth,
       isLoading:true,
-      nextImgIndex:999
+      nextImgIndex:999,
+      columnCount:0,
+      columnGap:0,
+      defaultImgUrl:defaultImg,
+      isShowBottom:false
     }
   },
+
   created() {
-    this.newImgWidth = Math.round((this.windowWidth-this.columnGap*(this.columnCount+1))/this.columnCount);
+    this.initColCount();
+    this.newImgWidth = (this.windowWidth-this.columnGap*(this.columnCount+1))/this.columnCount;
   },
+
   mounted() {
-    window.onresize = () => {
-      return this.windowWidth = document.documentElement.clientWidth;
-    };
+    //监听滚动条
+    window.onscroll = _.debounce(() => {
+      if(this.isBottom()) this.lazyLoad();
+    },200);
+    //监听视口大小
+    window.onresize = _.debounce(() => {
+    this.windowWidth = document.documentElement.clientWidth;
+    this.initColCount();
+    this.newImgWidth = Math.round((this.windowWidth-this.columnGap*(this.columnCount+1))/this.columnCount);
+    setTimeout(() => {
+      this.resortImg();
+      this.setContainerHeight();
+    }, 250);
+    }, 200)
   },
+
   methods:{
-   async initLayoutArr() {
-    //先置空视图抽象数组
-    this.layoutArr = [];
+  async initLayoutArr() {
+    console.log('1')
     let imgWrapper = this.$refs.imgWrapper;
-    let columnCount = this.columnCount;
+    const columnCount = this.columnCount;
     const windowHeight = document.documentElement.clientHeight;
     console.log(windowHeight)
     let imgList = this.imgList;
@@ -73,6 +94,8 @@ export default {
   },
   
   async loadOneImg(url,index) {
+    console.log(2)
+    let realImgList = this.$refs.img;
     let imgList = this.imgList;
     let img = new Image();
     img.src = url;
@@ -80,11 +103,13 @@ export default {
     await new Promise(resolve=>{
       img.onload = img.onerror = (e) => {
         if (e.type == 'load'){
+          realImgList[index].src = url;
+          console.log(realImgList[index],realImgList[index].clientHeight,'asfvasb')
           this.sortOneImg(index);
-          }
+        }
         else{
           //图片加载失败，给一个默认图片
-          imgList[index].imgUrl = "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fpic.51yuansu.com%2Fpic3%2Fcover%2F01%2F28%2F54%2F5923688f44190_610.jpg&refer=http%3A%2F%2Fpic.51yuansu.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1651043208&t=71eea7460ba902043abf558ddc4d77c0";
+          imgList[index].imgUrl = this.defaultImgUrl;
           console.log("index： ", index, "， 加载报错：", e);
           //重新加载
           this.loadOneImg(imgList[index].imgUrl,index);
@@ -95,22 +120,57 @@ export default {
   },
 
   sortOneImg(index) {
+    console.log('3')
     let imgWrapper = this.$refs.imgWrapper;
     let layoutArr = this.layoutArr;
-    let newImgWidth = this.newImgWidth;
-    let columnCount = this.columnCount;
-    let columnGap = this.columnGap;
+    const newImgWidth = this.newImgWidth;
+    const columnCount = this.columnCount;
+    const columnGap = this.columnGap;
     if(index < columnCount) {
       //首行，先放图再更新视图抽象数组
-      imgWrapper[index].style.left = index * (newImgWidth + columnGap) + 'px';
+      imgWrapper[index].style.left = newImgWidth * index + index * columnGap*1.25 + 'px';
+      imgWrapper[index].style.top = 0;
+      console.log(imgWrapper[index],imgWrapper[index].clientHeight,'111')
       layoutArr[index] = [imgWrapper[index].clientHeight];
     }else {
     //后续行
     const {shortestIndex,columnLength} = this.getShortestCol();
-    imgWrapper[index].style.left = shortestIndex * (newImgWidth + columnGap) + 'px';
+    imgWrapper[index].style.left = newImgWidth * shortestIndex + shortestIndex * columnGap*1.25 + 'px';
     imgWrapper[index].style.top = columnGap * layoutArr[shortestIndex].length + columnLength + 'px';
+    console.log(imgWrapper[index],imgWrapper[index].clientHeight,'22')
     layoutArr[shortestIndex].push(imgWrapper[index].clientHeight);
     }
+  },
+
+  resortImg() {
+    //先置空视图抽象数组
+    this.layoutArr = [];
+    let imgList = this.imgList;
+    for(let index = 0 ; index < imgList.length || index < this.nextImgIndex ; index++) {
+      this.sortOneImg(index);
+    }
+  },
+
+  async lazyLoad() {
+    const columnCount = this.columnCount;
+    let nextImgIndex = this.nextImgIndex;
+    const imgList = this.imgList;
+    //每次加载一排
+    for(let i = 0; i < columnCount;i++) {
+      if(nextImgIndex < this.imgList.length) {
+        this.nextImgIndex++;
+        await this.loadOneImg(imgList[nextImgIndex].imgUrl,nextImgIndex);
+        this.nextImgIndex = ++nextImgIndex;
+      }
+    }
+  },
+
+  setContainerHeight() {
+    let flowContainer = this.$refs.flowContainer;
+    let layoutArr = this.layoutArr;
+    const columnGap = this.columnGap;
+    const {longestIndex,columnLength} = this.getLongestCol();
+    flowContainer.style.height = layoutArr[longestIndex].length * columnGap * 1.2 + columnLength + 'px';
   },
 
   getShortestCol() {
@@ -125,24 +185,61 @@ export default {
     });
     
     return {shortestIndex,columnLength};
+  },
+
+  getLongestCol() {
+    let layoutArr = this.layoutArr;
+    let columnLength = 0;
+    let longestIndex = 0;
+    layoutArr.forEach((item,index)=>{
+    if(item.reduce((pre,cur)=> pre+cur,0) > columnLength){
+      longestIndex = index;
+      columnLength = item.reduce((pre,cur)=> pre+cur,0);
+    }
+    });
+    
+    return {longestIndex,columnLength};
+  },
+
+  isBottom() {
+    //滚动条滚动时，距离顶部的距离
+    var scrollTop = document.documentElement.scrollTop||document.body.scrollTop;
+    //可视区的高度
+    var windowHeight = document.documentElement.clientHeight || document.body.clientHeight;
+    //滚动条的总高度
+    var scrollHeight = document.documentElement.scrollHeight||document.body.scrollHeight;
+    //滚动条到底部的条件
+    if(scrollTop+windowHeight + 5 >= scrollHeight){
+      return true;
+    }else {
+      return false;
+    }
+  },
+
+  initColCount() {
+    this.columnGap = this.columnGapProp;
+    if(this.defaultImgUrlProp) {
+      this.defaultImgUrl = this.defaultImgUrlProp;
+    }
+    if(this.windowWidth < 420) {
+      this.columnCount = 2;
+    }else {
+      this.columnCount = this.columnCountProp;
+    }
   }
-  
   },
-  computed:{
-    columnCount(){
-      return this.columnCountProp;
-    },
-    columnGap(){
-      return this.columnGapProp;
-    },
-  },
+
   watch:{
     imgListProp(value) {
       //深拷贝
       this.imgListProp.forEach(item=>{
         this.imgList.push(JSON.parse(JSON.stringify(item)))
       });
-      setTimeout(()=>this.initLayoutArr(),0)
+      this.$nextTick(()=>this.initLayoutArr());
+    },
+    nextImgIndex() {
+      this.setContainerHeight();
+      this.isShowBottom = this.nextImgIndex >= this.imgList.length;
     }
   }
 }
@@ -152,13 +249,13 @@ export default {
   .flow-wrapper {
     width: 100%;
     height: auto;
-    background-color: #f5f5f5;
   }
 
   .flow-container {
     position: relative;
-    height: auto;
     width: 100%;
+    margin-left:2px ;
+    height: auto;
   }
 
   .flow-item {
@@ -169,13 +266,13 @@ export default {
     box-sizing: border-box;
     margin: .4rem;
     border-radius: .1rem;
-    box-shadow:0 1px 5px 0 var(--shadow);
+    box-shadow:1px 1px 6px 1px var(--shadow);
     transition: all .3s;
     visibility: hidden;
   }
 
   .flow-item:hover {
-    box-shadow:0 2px 10px 0 var(--shadow-hover);
+    box-shadow:2px 2px 12px 2px var(--shadow-hover);
   }
 
   .item-imgContainer {
@@ -203,7 +300,7 @@ export default {
 
   .skeleton-item {
     box-sizing: border-box;
-    margin: .4rem;
+    margin: .3rem;
     border-radius: .1rem;
     box-shadow:0 1px 5px 0 var(--shadow);
   }
@@ -243,6 +340,15 @@ export default {
     height: 10rem;
     border-radius: 0.3rem;
     animation-delay: .01s;
+  }
+
+  .footer {
+    width: 100%;
+    height: 2rem;
+    margin: 2rem 0;
+    text-align: center;
+    line-height: 2rem;
+    font-size: 1rem ;
   }
 
   @keyframes loading {

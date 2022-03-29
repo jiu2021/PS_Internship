@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <WaterfallFlow :imgListProp="imgList" :columnCountProp="4" :columnGapProp="10">
+    <WaterfallFlow :imgListProp="imgList" :columnCountProp="4" :columnGapProp="10" :defaultImgUrlProp="defaultImgUrl">
       <div slot="userDefined" class="slot">
         <span class="copyright">图片来源www.baidu.com</span>
       </div>
@@ -10,13 +10,14 @@
 
 <script>
 import WaterfallFlow from './components/WaterfallFlow/index.vue';
-import {reqGetImgList} from './api/index'
-
+import {reqGetImgList} from './api/index';
+import defaultImg from './assets/images/default.png'
 export default {
   name: 'App',
   data() {
     return {
-      imgList:[]
+      imgList:[],
+      defaultImgUrl:defaultImg
     }
   },
   components: {
