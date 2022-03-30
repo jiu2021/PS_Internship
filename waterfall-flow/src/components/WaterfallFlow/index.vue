@@ -5,6 +5,7 @@
           class="flow-item" ref="imgWrapper" 
           :style="{'width':newImgWidth+'px','visibility':!isLoading ? 'visible':'hidden'}"
           v-show="nextImgIndex > index"
+          @click="getData(index)"
       >
         <div class="item-imgContainer">
           <img src="#" class="item-img" ref="img">
@@ -32,22 +33,28 @@
 </template>
 
 <script>
-import _ from 'lodash';
-import defaultImg from './images/default.png'
+import _ from 'lodash';//引入防抖函数
+import defaultImg from './images/default.png'//自己提供的默认图
 export default {
   name:'WaterfallFlow',
   props:['imgListProp','columnCountProp','columnGapProp','defaultImgUrlProp'],
   data() {
     return {
-      layoutArr:[],
+      //接收父组件传来的数据
       imgList:[],
-      newImgWidth:0,
-      windowWidth:document.documentElement.clientWidth,
-      isLoading:true,
-      nextImgIndex:999,
       columnCount:0,
       columnGap:0,
-      defaultImgUrl:defaultImg,
+      defaultImgUrl:defaultImg,//默认图片，父传则用，无则用自己的默认图
+      //视图排列的的抽象二维数组，用来存储每张卡片高度，是维护的核心数据
+      layoutArr:[],
+      //当前窗口宽度和图片宽度
+      newImgWidth:0,
+      windowWidth:document.documentElement.clientWidth,
+      //是否在初始化加载
+      isLoading:true,
+      //记录下一次需要加载的图片索引
+      nextImgIndex:999,
+      //是否展示加载完毕
       isShowBottom:false
     }
   },
@@ -75,6 +82,7 @@ export default {
   },
 
   methods:{
+  //初始化加载
   async initLayoutArr() {
     let imgWrapper = this.$refs.imgWrapper;
     const columnCount = this.columnCount;
@@ -83,16 +91,15 @@ export default {
     for(let index = 0;index < imgList.length;index++) {
       await this.loadOneImg(imgList[index].imgUrl,index);
       //可视区外停止加载
-      console.log(parseInt(imgWrapper[index].style.top),windowHeight);
       //加载到可视区外或者已经加载完
       if((index-columnCount >= 0 && parseInt(imgWrapper[index-columnCount].style.top) > windowHeight)||index==imgList.length-1){
         this.nextImgIndex = ++index;
         break;
-      }
+      }    
     }
     this.isLoading = false;
   },
-  
+  //加载单个图片
   async loadOneImg(url,index) {
     let realImgList = this.$refs.img;
     let imgList = this.imgList;
@@ -103,7 +110,6 @@ export default {
       img.onload = img.onerror = (e) => {
         if (e.type == 'load'){
           realImgList[index].src = url;
-          console.log(realImgList[index].clientHeight)
           this.sortOneImg(index);
         }
         else{
@@ -117,7 +123,7 @@ export default {
       };
     });
   },
-
+  //排列单个图片
   sortOneImg(index) {
     let imgWrapper = this.$refs.imgWrapper;
     let layoutArr = this.layoutArr;
@@ -137,7 +143,7 @@ export default {
     layoutArr[shortestIndex].push(imgWrapper[index].clientHeight);
     }
   },
-
+  //根据视口大小重排
   resortImg() {
     //先置空视图抽象数组
     this.layoutArr = [];
@@ -146,7 +152,7 @@ export default {
       this.sortOneImg(index);
     }
   },
-
+  //懒加载
   async lazyLoad() {
     const columnCount = this.columnCount;
     let nextImgIndex = this.nextImgIndex;
@@ -156,11 +162,18 @@ export default {
       if(nextImgIndex < this.imgList.length) {
         this.nextImgIndex++;
         await this.loadOneImg(imgList[nextImgIndex].imgUrl,nextImgIndex);
+        this.setContainerHeight();
         this.nextImgIndex = ++nextImgIndex;
       }
     }
   },
-
+  //
+  getData(index) {
+    let realImgList = this.$refs.imgWrapper;
+    let imgList = this.imgList;
+    this.$emit('doSomething',realImgList[index],imgList[index]);
+  },
+  //重置父盒子高度
   setContainerHeight() {
     let flowContainer = this.$refs.flowContainer;
     let layoutArr = this.layoutArr;
@@ -168,7 +181,7 @@ export default {
     const {longestIndex,columnLength} = this.getLongestCol();
     flowContainer.style.height = columnLength + 'px';
   },
-
+  //获得当前最短列号以及长度
   getShortestCol() {
     let layoutArr = this.layoutArr;
     const columnGap = this.columnGap;
@@ -183,7 +196,7 @@ export default {
     
     return {shortestIndex,columnLength};
   },
-
+  //获得当前最长列号以及长度
   getLongestCol() {
     let layoutArr = this.layoutArr;
     const columnGap = this.columnGap;   
@@ -198,7 +211,7 @@ export default {
     
     return {longestIndex,columnLength};
   },
-
+  //检测滚动条是否到底
   isBottom() {
     //滚动条滚动时，距离顶部的距离
     var scrollTop = document.documentElement.scrollTop||document.body.scrollTop;
@@ -213,7 +226,7 @@ export default {
       return false;
     }
   },
-
+  //初始化列数和加载失败的默认图片，窄屏默认两列
   initColCount() {
     this.columnGap = this.columnGapProp;
     if(this.defaultImgUrlProp) {
@@ -233,9 +246,11 @@ export default {
       this.imgListProp.forEach(item=>{
         this.imgList.push(JSON.parse(JSON.stringify(item)))
       });
+      //接收到数据后开始初始化
       this.$nextTick(()=>this.initLayoutArr());
     },
     nextImgIndex() {
+      //每次加载图片后重置父盒子高度，以及判断是否加载完所有图片
       this.setContainerHeight();
       this.isShowBottom = this.nextImgIndex >= this.imgList.length;
     }

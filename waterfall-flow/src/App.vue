@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <WaterfallFlow :imgListProp="imgList" :columnCountProp="5" :columnGapProp="10" :defaultImgUrlProp="defaultImgUrl">
+    <WaterfallFlow :imgListProp="imgList" :columnCountProp="4" :columnGapProp="10" :defaultImgUrlProp="defaultImgUrl" @doSomething="doSomething">
       <div slot="userDefined" class="slot">
         <span class="copyright">图片来源www.baidu.com</span>
       </div>
@@ -11,7 +11,7 @@
 <script>
 import WaterfallFlow from './components/WaterfallFlow/index.vue';
 import {reqGetImgList} from './api/index';
-import defaultImg from './assets/images/default.png'
+import defaultImg from './assets/images/default.png'//引入父组件提供的默认图
 export default {
   name: 'App',
   data() {
@@ -24,6 +24,7 @@ export default {
     WaterfallFlow
   },
   created() {
+    //请求图片数据
     this.getImgList();
   },
   methods:{
@@ -32,6 +33,9 @@ export default {
       if(res.code==200) {
         this.imgList = res.data;
       }
+    },
+    doSomething(...value) {
+      console.log(value);
     }
   }
 }
