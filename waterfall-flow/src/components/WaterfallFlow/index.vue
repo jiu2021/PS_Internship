@@ -76,7 +76,6 @@ export default {
 
   methods:{
   async initLayoutArr() {
-    console.log('1')
     let imgWrapper = this.$refs.imgWrapper;
     const columnCount = this.columnCount;
     const windowHeight = document.documentElement.clientHeight;
@@ -94,7 +93,6 @@ export default {
   },
   
   async loadOneImg(url,index) {
-    console.log(2)
     let realImgList = this.$refs.img;
     let imgList = this.imgList;
     let img = new Image();
@@ -104,7 +102,6 @@ export default {
       img.onload = img.onerror = (e) => {
         if (e.type == 'load'){
           realImgList[index].src = url;
-          console.log(realImgList[index],realImgList[index].clientHeight,'asfvasb')
           this.sortOneImg(index);
         }
         else{
@@ -120,7 +117,6 @@ export default {
   },
 
   sortOneImg(index) {
-    console.log('3')
     let imgWrapper = this.$refs.imgWrapper;
     let layoutArr = this.layoutArr;
     const newImgWidth = this.newImgWidth;
@@ -130,14 +126,12 @@ export default {
       //首行，先放图再更新视图抽象数组
       imgWrapper[index].style.left = newImgWidth * index + index * columnGap*1.25 + 'px';
       imgWrapper[index].style.top = 0;
-      console.log(imgWrapper[index],imgWrapper[index].clientHeight,'111')
       layoutArr[index] = [imgWrapper[index].clientHeight];
     }else {
     //后续行
     const {shortestIndex,columnLength} = this.getShortestCol();
     imgWrapper[index].style.left = newImgWidth * shortestIndex + shortestIndex * columnGap*1.25 + 'px';
     imgWrapper[index].style.top = columnGap * layoutArr[shortestIndex].length + columnLength + 'px';
-    console.log(imgWrapper[index],imgWrapper[index].clientHeight,'22')
     layoutArr[shortestIndex].push(imgWrapper[index].clientHeight);
     }
   },
