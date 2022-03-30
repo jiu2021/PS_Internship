@@ -38,6 +38,7 @@ td {
 body {
   width: 100%;
   height: auto;
+  overflow-x: hidden;
 }
 
 

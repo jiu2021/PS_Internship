@@ -59,8 +59,8 @@ export default {
 
   mounted() {
     //监听滚动条
-    window.onscroll = _.debounce(() => {
-      if(this.isBottom()) this.lazyLoad();
+    window.onscroll = _.debounce(async() => {
+      if(this.isBottom()) await this.lazyLoad();
     },200);
     //监听视口大小
     window.onresize = _.debounce(() => {
@@ -79,12 +79,13 @@ export default {
     let imgWrapper = this.$refs.imgWrapper;
     const columnCount = this.columnCount;
     const windowHeight = document.documentElement.clientHeight;
-    console.log(windowHeight)
     let imgList = this.imgList;
     for(let index = 0;index < imgList.length;index++) {
       await this.loadOneImg(imgList[index].imgUrl,index);
       //可视区外停止加载
-      if(index-columnCount >= 0 && parseInt(imgWrapper[index-columnCount].style.top) > windowHeight){
+      console.log(parseInt(imgWrapper[index].style.top),windowHeight);
+      //加载到可视区外或者已经加载完
+      if((index-columnCount >= 0 && parseInt(imgWrapper[index-columnCount].style.top) > windowHeight)||index==imgList.length-1){
         this.nextImgIndex = ++index;
         break;
       }
@@ -102,6 +103,7 @@ export default {
       img.onload = img.onerror = (e) => {
         if (e.type == 'load'){
           realImgList[index].src = url;
+          console.log(realImgList[index].clientHeight)
           this.sortOneImg(index);
         }
         else{
@@ -131,7 +133,7 @@ export default {
     //后续行
     const {shortestIndex,columnLength} = this.getShortestCol();
     imgWrapper[index].style.left = newImgWidth * shortestIndex + shortestIndex * columnGap*1.25 + 'px';
-    imgWrapper[index].style.top = columnGap * layoutArr[shortestIndex].length + columnLength + 'px';
+    imgWrapper[index].style.top = columnLength + 'px';
     layoutArr[shortestIndex].push(imgWrapper[index].clientHeight);
     }
   },
@@ -164,17 +166,18 @@ export default {
     let layoutArr = this.layoutArr;
     const columnGap = this.columnGap;
     const {longestIndex,columnLength} = this.getLongestCol();
-    flowContainer.style.height = layoutArr[longestIndex].length * columnGap * 1.2 + columnLength + 'px';
+    flowContainer.style.height = columnLength + 'px';
   },
 
   getShortestCol() {
     let layoutArr = this.layoutArr;
-    let columnLength = layoutArr[0].reduce((pre,cur)=> pre+cur,0);
+    const columnGap = this.columnGap;
+    let columnLength = layoutArr[0].reduce((pre,cur)=> pre+cur,0)+layoutArr[0].length*columnGap;
     let shortestIndex = 0;
     layoutArr.forEach((item,index)=>{
-    if(item.reduce((pre,cur)=> pre+cur,0) < columnLength){
+    if(item.reduce((pre,cur)=> pre+cur,0)+item.length*columnGap < columnLength){
       shortestIndex = index;
-      columnLength = item.reduce((pre,cur)=> pre+cur,0);
+      columnLength = item.reduce((pre,cur)=> pre+cur,0)+item.length*columnGap;
     }
     });
     
@@ -183,12 +186,13 @@ export default {
 
   getLongestCol() {
     let layoutArr = this.layoutArr;
+    const columnGap = this.columnGap;   
     let columnLength = 0;
     let longestIndex = 0;
     layoutArr.forEach((item,index)=>{
-    if(item.reduce((pre,cur)=> pre+cur,0) > columnLength){
+    if(item.reduce((pre,cur)=> pre+cur,0)+item.length*columnGap > columnLength){
       longestIndex = index;
-      columnLength = item.reduce((pre,cur)=> pre+cur,0);
+      columnLength = item.reduce((pre,cur)=> pre+cur,0)+item.length*columnGap;
     }
     });
     
@@ -280,6 +284,7 @@ export default {
   }
 
   .item-details {
+    overflow: hidden;
     padding: .3rem .2rem;
   }
 
@@ -294,7 +299,7 @@ export default {
 
   .skeleton-item {
     box-sizing: border-box;
-    margin: .3rem;
+    margin: .3rem auto;
     border-radius: .1rem;
     box-shadow:0 1px 5px 0 var(--shadow);
   }
@@ -339,7 +344,7 @@ export default {
   .footer {
     width: 100%;
     height: 2rem;
-    margin: 2rem 0;
+    margin: 1rem 0;
     text-align: center;
     line-height: 2rem;
     font-size: 1rem ;

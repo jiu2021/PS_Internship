@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <WaterfallFlow :imgListProp="imgList" :columnCountProp="4" :columnGapProp="10" :defaultImgUrlProp="defaultImgUrl">
+    <WaterfallFlow :imgListProp="imgList" :columnCountProp="5" :columnGapProp="10" :defaultImgUrlProp="defaultImgUrl">
       <div slot="userDefined" class="slot">
         <span class="copyright">图片来源www.baidu.com</span>
       </div>
@@ -46,6 +46,7 @@ export default {
   .copyright {
     font-size: 0.5rem;
     color: rgb(0,0,0,0.4);
+    overflow: hidden;
   }
 
   .slot {
